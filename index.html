@@ -442,7 +442,7 @@
             <button class="prec-btn" onclick="changePrecision('sorted', -1)">
               −
             </button>
-            <div class="prec-val" id="prec-sorted">1</div>
+            <div class="prec-val" id="prec-sorted">0</div>
             <button class="prec-btn" onclick="changePrecision('sorted', 1)">
               +
             </button>
@@ -515,7 +515,7 @@
       const STORAGE_KEY = "fsd-ssd-data";
 
       let INPUT_DATA = loadData();
-      const PRECISION = { sorted: 1, fsd: 1, ssd: 1 };
+      const PRECISION = { sorted: 0, fsd: 1, ssd: 1 };
 
       // ── STORAGE ──
       function loadData() {
@@ -594,8 +594,9 @@
 
       function updateCell(row, col, value) {
         if (!INPUT_DATA[row]) return;
-        // Allow negative: parse as float
-        const v = value === "" || value === "-" ? 0 : parseFloat(value);
+        const trimmed = value.trim().replace(",", ".");
+        if (trimmed === "" || trimmed === "-") return;
+        const v = parseFloat(trimmed);
         INPUT_DATA[row][col] = isNaN(v) ? 0 : v;
         saveData();
       }
@@ -617,7 +618,7 @@
             <input
               class="cell-input"
               type="text"
-              inputmode="decimal"
+              inputmode="text"
               value="${val}"
               onblur="updateCell(${ri},${c},this.value)"
               onkeydown="if(event.key==='Enter'){this.blur()}"
