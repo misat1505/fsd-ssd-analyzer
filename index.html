@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FSD / SSD Analyzer</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 32px;
+        background: #0f172a;
+        color: white;
+        font-family: Inter, Arial, sans-serif;
+      }
+
+      h1 {
+        margin-top: 0;
+        font-size: 42px;
+      }
+
+      h2 {
+        margin-top: 48px;
+        font-size: 24px;
+      }
+
+      .container {
+        max-width: 1600px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 18px;
+        padding: 24px;
+        margin-top: 24px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+        align-items: center;
+      }
+
+      button {
+        border: none;
+        background: #2563eb;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: 0.2s;
+      }
+
+      button:hover {
+        background: #1d4ed8;
+      }
+
+      button.danger {
+        background: #dc2626;
+      }
+
+      button.danger:hover {
+        background: #b91c1c;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+        overflow: hidden;
+        border-radius: 14px;
+      }
+
+      th {
+        background: #1e293b;
+        padding: 14px;
+        border: 1px solid #334155;
+      }
+
+      td {
+        border: 1px solid #334155;
+        padding: 8px;
+        text-align: center;
+      }
+
+      input[type="number"] {
+        width: 100%;
+        background: #0f172a;
+        border: 1px solid #334155;
+        color: white;
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #1e293b;
+        margin-right: 8px;
+        margin-bottom: 8px;
+      }
+
+      .good {
+        background: #14532d;
+      }
+
+      .bad {
+        background: #7f1d1d;
+      }
+
+      .log {
+        background: #020617;
+        border: 1px solid #1e293b;
+        border-radius: 14px;
+        padding: 16px;
+        max-height: 500px;
+        overflow: auto;
+        font-family: monospace;
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
+
+      .result-box {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+
+      .pill {
+        background: #2563eb;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-weight: 700;
+      }
+
+      .warning {
+        background: #7c2d12;
+        border: 1px solid #ea580c;
+        padding: 14px;
+        border-radius: 12px;
+        margin-top: 16px;
+      }
+
+      .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 24px;
+      }
+
+      .small-table td {
+        font-size: 12px;
+      }
+
+      .small-table th {
+        font-size: 12px;
+      }
+
+      .precision-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 4px 10px;
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 12px;
+      }
+
+      .precision-control label {
+        font-weight: 600;
+        color: #cbd5e1;
+      }
+
+      .precision-control input[type="number"] {
+        width: 52px;
+        padding: 3px 6px;
+        font-size: 12px;
+        background: #0f172a;
+        border: 1px solid #475569;
+        border-radius: 6px;
+        color: white;
+        text-align: center;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .card-header h2 {
+        margin-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>FSD / SSD Analyzer</h1>
+
+      <div class="card">
+        <h2>Dane wejściowe</h2>
+
+        <div class="toolbar">
+          <button onclick="addRow()">➕ Dodaj wiersz</button>
+          <button onclick="addColumn()">➕ Dodaj kolumnę</button>
+          <button onclick="removeColumn()" class="danger">
+            ➖ Usuń kolumnę
+          </button>
+          <button onclick="deleteLocalStorage()" class="danger">
+            Usuń dane
+          </button>
+          <button onclick="recalculate()">♻️ Recalculate</button>
+        </div>
+
+        <div id="validation"></div>
+
+        <table id="input-table"></table>
+      </div>
+
+      <div class="section-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>Sorted rows</h2>
+            <div class="precision-control">
+              <label>Precision:</label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value="1"
+                onchange="setPrecision('sorted', this.value)"
+              />
+            </div>
+          </div>
+          <div id="sorted-table"></div>
+        </div>
+
+        <div class="card">
+          <h2>Distinct values</h2>
+          <div id="distinct-values"></div>
+        </div>
+      </div>
+
+      <div class="section-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>FSD table</h2>
+            <div class="precision-control">
+              <label>Precision:</label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value="1"
+                onchange="setPrecision('fsd', this.value)"
+              />
+            </div>
+          </div>
+          <div id="fsd-table"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>
+              SSD table
+              <span style="font-size: 14px; color: #64748b; font-weight: 400"
+                >(tylko niezdominowane FSD)</span
+              >
+            </h2>
+            <div class="precision-control">
+              <label>Precision:</label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value="1"
+                onchange="setPrecision('ssd', this.value)"
+              />
+            </div>
+          </div>
+          <div id="ssd-table"></div>
+        </div>
+
+        <div class="card">
+          <h2>SSD result</h2>
+
+          <div id="result"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Logs / explanations</h2>
+
+        <div id="logs" class="log"></div>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "fsd-ssd-data";
+
+      let INPUT_DATA = loadData();
+
+      // Per-table precision settings
+      const PRECISION = { sorted: 1, fsd: 1, ssd: 1 };
+
+      function setPrecision(table, value) {
+        const p = parseInt(value, 10);
+        if (!isNaN(p) && p >= 0 && p <= 10) {
+          PRECISION[table] = p;
+          recalculate();
+        }
+      }
+
+      function fmt(value, table) {
+        return Number(value).toFixed(PRECISION[table] ?? 1);
+      }
+
+      function loadData() {
+        const fromStorage = localStorage.getItem(STORAGE_KEY);
+
+        if (fromStorage) {
+          return JSON.parse(fromStorage);
+        }
+
+        return [[]];
+      }
+
+      function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(INPUT_DATA));
+      }
+
+      function log(...args) {
+        const el = document.getElementById("logs");
+
+        el.textContent += args.join(" ") + "\n";
+      }
+
+      function clearLogs() {
+        document.getElementById("logs").textContent = "";
+      }
+
+      function validateData() {
+        const validation = document.getElementById("validation");
+
+        const lengths = INPUT_DATA.map((v) => v.length);
+
+        const same = lengths.every((v) => v === lengths[0]);
+
+        if (!same) {
+          validation.innerHTML = `
+          <div class="warning">
+            ❌ Wszystkie wiersze muszą mieć tyle samo kolumn
+          </div>
+        `;
+        } else {
+          validation.innerHTML = `
+          <div class="badge good">
+            ✅ Dane poprawne
+          </div>
+        `;
+        }
+
+        return same;
+      }
+
+      function renderInputTable() {
+        const table = document.getElementById("input-table");
+
+        const maxCols = Math.max(...INPUT_DATA.map((v) => v.length));
+
+        let html = "<tr>";
+
+        for (let i = 0; i < maxCols; i++) {
+          html += `<th>Kolumna ${i + 1}</th>`;
+        }
+
+        html += "<th>Akcje</th>";
+        html += "</tr>";
+
+        INPUT_DATA.forEach((row, rowIndex) => {
+          html += "<tr>";
+
+          for (let col = 0; col < maxCols; col++) {
+            const value = row[col] ?? "";
+
+            html += `
+            <td>
+              <input
+                type="number"
+                value="${value}"
+                onchange="updateCell(${rowIndex}, ${col}, this.value)"
+              />
+            </td>
+          `;
+          }
+
+          html += `
+          <td>
+            <button class="danger" onclick="removeRow(${rowIndex})">
+              Usuń
+            </button>
+          </td>
+        `;
+
+          html += "</tr>";
+        });
+
+        table.innerHTML = html;
+      }
+
+      function updateCell(row, col, value) {
+        if (!INPUT_DATA[row]) return;
+
+        INPUT_DATA[row][col] = Number(value);
+
+        saveData();
+      }
+
+      function addRow() {
+        const cols = Math.max(...INPUT_DATA.map((v) => v.length));
+
+        INPUT_DATA.push(Array(cols).fill(0));
+
+        saveData();
+
+        renderInputTable();
+      }
+
+      function removeRow(index) {
+        INPUT_DATA.splice(index, 1);
+
+        saveData();
+
+        renderInputTable();
+
+        recalculate();
+      }
+
+      function addColumn() {
+        INPUT_DATA.forEach((row) => row.push(0));
+
+        saveData();
+
+        renderInputTable();
+      }
+
+      function removeColumn() {
+        INPUT_DATA.forEach((row) => row.pop());
+
+        saveData();
+
+        renderInputTable();
+
+        recalculate();
+      }
+
+      function renderSimpleTable(
+        containerId,
+        rows,
+        headers = [],
+        rowLabels = null,
+        tableName = "fsd",
+      ) {
+        const el = document.getElementById(containerId);
+
+        let html = `<table class="small-table">`;
+
+        // HEADER
+        html += "<tr>";
+        html += "<th></th>";
+
+        headers.forEach((header) => {
+          html += `<th>${header}</th>`;
+        });
+
+        html += "</tr>";
+
+        // ROWS
+        rows.forEach((row, rowIndex) => {
+          html += "<tr>";
+
+          const label = rowLabels ? rowLabels[rowIndex] : `A${rowIndex + 1}`;
+          html += `<th>${label}</th>`;
+
+          row.forEach((value) => {
+            html += `<td>${fmt(value, tableName)}</td>`;
+          });
+
+          html += "</tr>";
+        });
+
+        html += "</table>";
+
+        el.innerHTML = html;
+      }
+
+      function isDominanteFSD(
+        row,
+        checkRow,
+        rowIndex,
+        checkRowIndex,
+        uniqueValues,
+      ) {
+        log(`[FSD] Czy A${rowIndex + 1} dominuje A${checkRowIndex + 1}?`);
+
+        for (let i = 0; i < row.length; i++) {
+          if (row[i] > checkRow[i]) {
+            const x = uniqueValues[i];
+            log(
+              `❌ NIE, bo F_A${rowIndex + 1}(${x}) = ${fmt(row[i], "fsd")} > F_A${checkRowIndex + 1}(${x}) = ${fmt(checkRow[i], "fsd")}`,
+            );
+
+            return false;
+          }
+        }
+
+        log(`✅ TAK - wszystkie wartości <=`);
+
+        return true;
+      }
+
+      function getUndominatedByFSD(fsdTable, uniqueValues) {
+        const dominated = Array(fsdTable.length).fill(false);
+
+        for (let i = 0; i < fsdTable.length; i++) {
+          for (let j = 0; j < fsdTable.length; j++) {
+            if (i === j) continue;
+
+            const dominates = isDominanteFSD(
+              fsdTable[i],
+              fsdTable[j],
+              i,
+              j,
+              uniqueValues,
+            );
+
+            if (dominates) {
+              dominated[j] = true;
+
+              log(`➡️ A${j + 1} jest zdominowane przez A${i + 1}`);
+            }
+          }
+        }
+
+        // Return both the rows and their original indices
+        return fsdTable
+          .map((row, index) => ({ row, index }))
+          .filter(({ index }) => !dominated[index]);
+      }
+
+      function isDominanteSSD(
+        row,
+        checkRow,
+        uniqueValues,
+        rowIndex,
+        checkRowIndex,
+      ) {
+        log(`[SSD] Czy A${rowIndex + 1} dominuje A${checkRowIndex + 1}?`);
+
+        const rowIntegral = [0];
+        const checkIntegral = [0];
+
+        for (let i = 1; i < row.length; i++) {
+          const delta = uniqueValues[i] - uniqueValues[i - 1];
+
+          rowIntegral.push(rowIntegral[i - 1] + delta * row[i - 1]);
+
+          checkIntegral.push(checkIntegral[i - 1] + delta * checkRow[i - 1]);
+        }
+
+        for (let i = 0; i < rowIntegral.length; i++) {
+          if (rowIntegral[i] > checkIntegral[i]) {
+            const x = uniqueValues[i];
+            log(
+              `❌ NIE - całka A${rowIndex + 1}(${x}) = ${fmt(rowIntegral[i], "ssd")} > całka A${checkRowIndex + 1}(${x}) = ${fmt(checkIntegral[i], "ssd")}`,
+            );
+
+            return false;
+          }
+        }
+
+        log(`✅ TAK - SSD dominance`);
+
+        return true;
+      }
+
+      function getUndominatedBySSD(uniqueValues, fsdUndominatedEntries) {
+        const rows = fsdUndominatedEntries.map((e) => e.row);
+        const dominated = Array(rows.length).fill(false);
+
+        for (let i = 0; i < rows.length; i++) {
+          for (let j = 0; j < rows.length; j++) {
+            if (i === j) continue;
+
+            const dominates = isDominanteSSD(
+              rows[i],
+              rows[j],
+              uniqueValues,
+              fsdUndominatedEntries[i].index,
+              fsdUndominatedEntries[j].index,
+            );
+
+            if (dominates) {
+              dominated[j] = true;
+
+              log(
+                `➡️ SSD: A${fsdUndominatedEntries[j].index + 1} zdominowane przez A${fsdUndominatedEntries[i].index + 1}`,
+              );
+            }
+          }
+        }
+
+        return fsdUndominatedEntries.filter((_, idx) => !dominated[idx]);
+      }
+
+      function deleteLocalStorage() {
+        localStorage.removeItem(STORAGE_KEY);
+        INPUT_DATA = [[]];
+        renderInputTable();
+        recalculate();
+      }
+
+      function recalculate() {
+        clearLogs();
+
+        if (!validateData()) return;
+
+        const itemsInRow = INPUT_DATA[0].length;
+
+        const sortedRows = INPUT_DATA.map((row) =>
+          [...row].sort((a, b) => a - b),
+        );
+
+        renderSimpleTable(
+          "sorted-table",
+          sortedRows,
+          Array.from({ length: itemsInRow }).map((_, idx) => idx + 1),
+          null,
+          "sorted",
+        );
+
+        const uniqueValues = [...new Set(sortedRows.flat())].sort(
+          (a, b) => a - b,
+        );
+
+        document.getElementById("distinct-values").innerHTML = uniqueValues
+          .map((v) => `<span class="badge">${v}</span>`)
+          .join("");
+
+        const fsd = [];
+
+        for (const row of sortedRows) {
+          const rowFsd = [];
+
+          for (const value of uniqueValues) {
+            const count = row.filter((v) => v <= value).length;
+
+            rowFsd.push(count / itemsInRow);
+          }
+
+          fsd.push(rowFsd);
+        }
+
+        renderSimpleTable("fsd-table", fsd, uniqueValues, null, "fsd");
+
+        // FSD undominated — now returns entries with original indices
+        const fsdUndominatedEntries = getUndominatedByFSD(fsd, uniqueValues);
+
+        // Build SSD table only for FSD-undominated rows
+        const ssdTable = [];
+
+        for (const { row } of fsdUndominatedEntries) {
+          const integrals = [0];
+
+          for (let i = 1; i < row.length; i++) {
+            const delta = uniqueValues[i] - uniqueValues[i - 1];
+
+            integrals.push(integrals[i - 1] + delta * row[i - 1]);
+          }
+
+          ssdTable.push(integrals);
+        }
+
+        // Render SSD table with correct original row labels
+        const ssdRowLabels = fsdUndominatedEntries.map(
+          (e) => `A${e.index + 1}`,
+        );
+        renderSimpleTable(
+          "ssd-table",
+          ssdTable,
+          uniqueValues,
+          ssdRowLabels,
+          "ssd",
+        );
+
+        const ssdUndominatedEntries = getUndominatedBySSD(
+          uniqueValues,
+          fsdUndominatedEntries,
+        );
+
+        const result = [];
+        const indices = [];
+
+        for (const { index } of ssdUndominatedEntries) {
+          indices.push(index + 1);
+          result.push(INPUT_DATA[index]);
+        }
+
+        document.getElementById("result").innerHTML = `
+        <div class="result-box">
+          ${indices
+            .map(
+              (idx) => `
+                <div class="pill">
+                  A${idx}
+                </div>
+              `,
+            )
+            .join("")}
+        </div>
+
+        <h3>Wartości</h3>
+
+        <pre>${JSON.stringify(result, null, 2)}</pre>
+      `;
+
+        log("\n=== FINAL RESULT ===");
+
+        indices.forEach((idx) => {
+          log(`✅ A${idx} pozostało niezdominowane`);
+        });
+
+        saveData();
+      }
+
+      renderInputTable();
+
+      recalculate();
+    </script>
+  </body>
+</html>
